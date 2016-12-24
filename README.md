@@ -4,6 +4,29 @@ mbGrid is AngularJs library for draw grid. mbGrid represents a new generation of
 
 ## Usage
 ### Paging
+#### Config
 ```javascript
-$scope.$apply();
+const gridConfig = {
+  paging: {
+    visible: true,
+    currentPage: 1,
+    pageSize: 20,
+    totalRow: 1
+  }
+}
+```
+#### Set totalRow
+Set totalRow after load data:
+```javascript
+// If totalRow calculate in server side
+gridConfig.paging.totalRow = data.TotalRecords;
+
+// Else
+gridConfig.paging.totalRow = data.lenght;
+```
+#### Change paging
+Use this line for change page:
+```javascript
+/** Change paging page */
+$scope.$watch("gridConfig.paging.currentPage", () => $scope.ChangeSymbol(currentIsin));
 ```
