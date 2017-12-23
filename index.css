@@ -1,0 +1,80 @@
+.grid-container {
+    width: 600px;
+    height: 500px;
+    border: 1px solid;
+    overflow: hidden;
+    margin: 100px auto;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+.header {
+    width: 100%;
+    height: 30px;
+    min-height: 30px;
+    border-bottom: 1px solid;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+.header td {
+    height: 30px;
+    box-sizing: border-box;
+}
+.body {
+    width: 100%;
+    height: 100%;
+    border: 1px solid blue;
+    box-sizing: border-box;
+    overflow: auto;
+}
+.grid-container td.freez {
+    position: fixed;
+}
+
+
+
+
+            table {
+                table-layout: fixed;
+            }
+            table td {
+                border-right: 1px solid;
+                border-bottom: 1px solid;
+                box-sizing: border-box;
+            }
+            table tr:hover > td {
+                background-color: #eee!important;
+            }
+            tr {
+                height: 20px;
+            }
+            thead > tr {
+                background-color: #fff;
+                z-index: 100;
+            }
+            #table tbody{
+                display: block;
+                overflow: auto;
+                width: 500px;
+                height: 400px;
+            }
+            tbody tr > td:first-child{
+                background-color: #fff;
+                /* position: absolute;
+                z-index: -1; */
+            }
+            #header {
+                position: relative;
+                overflow: hidden;
+                height: 20px;
+                z-index: 100;
+            }
+            #header > table {
+                right: -3px;
+                position: absolute;
+            }
+
+tbody td {
+    z-index: -2;
+    position: relative;
+}
