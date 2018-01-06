@@ -19,6 +19,8 @@
 .header td {
     height: 30px;
     box-sizing: border-box;
+    z-index: 1;
+    position: relative;
 }
 .body {
     width: 100%;
@@ -34,47 +36,57 @@
 
 
 
-            table {
-                table-layout: fixed;
-            }
-            table td {
-                border-right: 1px solid;
-                border-bottom: 1px solid;
-                box-sizing: border-box;
-            }
-            table tr:hover > td {
-                background-color: #eee!important;
-            }
-            tr {
-                height: 20px;
-            }
-            thead > tr {
-                background-color: #fff;
-                z-index: 100;
-            }
-            #table tbody{
-                display: block;
-                overflow: auto;
-                width: 500px;
-                height: 400px;
-            }
-            tbody tr > td:first-child{
-                background-color: #fff;
-                /* position: absolute;
-                z-index: -1; */
-            }
-            #header {
-                position: relative;
-                overflow: hidden;
-                height: 20px;
-                z-index: 100;
-            }
-            #header > table {
-                right: -3px;
-                position: absolute;
-            }
+table {
+    table-layout: fixed;
+}
+table td {
+    border-right: 1px solid;
+    border-bottom: 1px solid;
+    box-sizing: border-box;
+}
+table tr:hover > td {
+    background-color: #eee!important;
+}
+tr {
+    height: 20px;
+}
+thead > tr {
+    background-color: #fff;
+    z-index: 100;
+}
+thead td {
+    position: relative;
+}
+#table tbody{
+    display: block;
+    overflow: auto;
+    width: 500px;
+    height: 400px;
+}
+tbody tr > td:first-child{
+    background-color: #fff;
+    /* position: absolute;
+    z-index: -1; */
+}
+#header {
+    position: relative;
+    overflow: hidden;
+    height: 20px;
+    z-index: 100;
+}
+#header > table {
+    right: -3px;
+    position: absolute;
+}
 
 tbody td {
-    z-index: -2;
     position: relative;
+}
+.resize-column {
+    width: 5px;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    background-color: blue;
 }
