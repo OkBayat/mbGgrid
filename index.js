@@ -78,6 +78,9 @@ function initGrid() {
                     });
             })
         )
+        .on("click", function() {
+            console.log("click");
+        })
         .append("div")
         .attr("class", "resize-column")
         .call(mb.drag()
@@ -100,26 +103,6 @@ function initGrid() {
             })
         );
 
-        //.attr("draggable", true)
-        //.on("dragstart", function(d, i) {
-        //    mb.event.dataTransfer.setData("index", i);
-        //})
-        //.on("dragover", function() {
-        //    mb.event.preventDefault();
-        //})
-        //.on("drop", function (d, i) {
-        //    mb.event.preventDefault();
-        //        const
-        //            data = mb.select(this).parent().data(),
-        //            index = +mb.event.dataTransfer.getData("index"),
-        //            dragData = data[index];
-
-        //        data.splice(index, 1);
-        //        data.splice(i, 0, dragData);
-
-        //        initGrid();
-        //})
-
     mb.select(".body tbody")
         .data(data)
         .enter()
@@ -128,8 +111,6 @@ function initGrid() {
     mb.select(".body")
         .on("scroll",
         function () {
-            const container = mb.select('.grid-container').node();
-
             mb.select(this)
                 .select("thead")
                 .style("transform", `translate(0, ${this.scrollTop}px)`);
@@ -148,7 +129,10 @@ function initGrid() {
             mb.select(this)
                 .select("tbody")
                 .selectAll("tr")
-                .each(function(d, i) {
+                .watch(function (d, i, update) {
+                    if (update) {
+                        mb.select(this).remove("*");
+                    }
                     const body = mb.select(".body").node().getBoundingClientRect();
                     const row = this.getBoundingClientRect();
 
@@ -158,7 +142,8 @@ function initGrid() {
                             for (let i in config) {
                                 mb.select(this)
                                     .append("td")
-                                    .html(d[config[i].binding]);
+                                    .html(d[config[i].binding])
+                                    .data(d[config[i].binding]);
                             }
                         }
                             

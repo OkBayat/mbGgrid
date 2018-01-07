@@ -42,7 +42,8 @@
         parent: select_parent,
         insertAfter: select_insertAfter,
         child: select_child,
-        next: select_next
+        next: select_next,
+        watch: select_watch
     }
     function attrConstant(name, value) {
         return function () {
@@ -203,6 +204,16 @@
     }
 
 
+    function select_watch(callbacks) {
+        return this.each(function(d, i) {
+            callbacks.call(this, d, i, false);
+
+            watch(this.parentNode._data, i, (n) => {
+                callbacks.call(this, n, i, true);
+            });
+        });
+    }
+
     function select_append(name) {
 
         const enter = [];
@@ -235,7 +246,7 @@
                 appendChild: node => this.group[0].appendChild(node),
                 _data: data[j]
             }
-            enter[j] = element
+            enter[j] = element;
         }
 
         return new Select(enter);
@@ -303,7 +314,7 @@
         };
 
         function drag(selection) {
-            let self, args;
+            let self, args, move;
 
             selection
                 .on("mousedown", function () {
@@ -311,23 +322,26 @@
                     if (listeners.start) {
                         listeners.start.apply(this, arguments);
                     }
+                    move = 0;
                     self = this;
                     args = arguments;
                     document.addEventListener("mousemove", mousemove);
                     document.addEventListener("mouseup", mouseup);
                 });
-            function mouseup(event) {
-                document.removeEventListener("mousemove", mousemove);
-                document.removeEventListener("mouseup", mouseup);
-                if (listeners.end) {
-                    exports.event = event;
-                    listeners.end.apply(self, args);
-                }
-            }
             function mousemove(event) {
+                move ++;
                 if (listeners.drag) {
                     exports.event = event;
                     listeners.drag.apply(self, args);
+                }
+            }
+            function mouseup(event) {
+                document.removeEventListener("mousemove", mousemove);
+                document.removeEventListener("mouseup", mouseup);
+
+                if (move > 0 && listeners.end) {
+                    exports.event = event;
+                    listeners.end.apply(self, args);
                 }
             }
         }
@@ -346,4 +360,54 @@
     exports.selectAll = selectAll;
     exports.drag = drag;
     Object.defineProperty(exports, '__esModule', { value: true });
+
+
+
+
+
+    function watch(object, prop, handler, deep) {
+        if (object.watchList) {
+            if (object.watchList[prop] && typeof object.watchList[prop] == "object") {
+                const existFn = object.watchList[prop].find(item => item.toString() === handler.toString());
+
+                if (existFn) {
+                    const index = object.watchList[prop].indexOf(existFn);
+                    object.watchList[prop].splice(index, 1);
+                }
+            } else {
+                object.watchList[prop] = [];
+            }
+        } else {
+            Object.defineProperty(object, "watchList", { value: [] });
+            object.watchList[prop] = [];
+        }
+        object.watchList[prop].push(handler);
+
+        let val = object[prop];
+        Object.defineProperty(object, prop, {
+            get: () => val,
+            set: newVal => {
+                if (newVal !== val) {
+                    const oldVal = val;
+                    val = newVal;
+                    //object[prop] = val;
+                    for (let i in object.watchList[prop]) {
+                        object.watchList[prop][i](newVal, oldVal);
+                    }
+                }
+            },
+            enumerable: true,
+            configurable: true
+        });
+
+        if (deep) {
+            if (typeof object[prop] == "object") {
+                for (let i in object[prop]) {
+                    if (!(prop === 'OHLC' || i === 'data')) {
+                        watch(object[prop], i, handler, deep);
+                    }
+                }
+            }
+        }
+    }
 }));
