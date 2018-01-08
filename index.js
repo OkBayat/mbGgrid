@@ -43,11 +43,18 @@ function initGrid() {
         .attr("cellpadding", 0)
         .attr("cellspacing", 0);
     const thead = table.append("thead")
+        .selectAll("tr")
+        .data([config])
+        .enter()
         .append("tr");
-    table.append("tbody");
-
+    table
+        .selectAll("tbody")
+        .data([data])
+        .enter()
+        .append("tbody");
 
     thead
+        .selectAll("td")
         .data(config)
         .enter()
         .append("td")
@@ -104,6 +111,7 @@ function initGrid() {
         );
 
     mb.select(".body tbody")
+        .selectAll("tr")
         .data(data)
         .enter()
         .append("tr");
@@ -129,24 +137,25 @@ function initGrid() {
             mb.select(this)
                 .select("tbody")
                 .selectAll("tr")
-                .watch(function (d, i, update) {
-                    if (update) {
-                        mb.select(this).remove("*");
-                    }
+                .each(function(d) {
                     const body = mb.select(".body").node().getBoundingClientRect();
                     const row = this.getBoundingClientRect();
 
                     if (body.top < row.bottom &&
                         body.bottom > row.top) {
-                        if (!this.firstElementChild) {
-                            for (let i in config) {
-                                mb.select(this)
-                                    .append("td")
-                                    .html(d[config[i].binding])
-                                    .data(d[config[i].binding]);
-                            }
+
+                        const data = [];
+                        for (let i in config) {
+                            data.push(d[config[i].binding]);
                         }
-                            
+
+                        mb.select(this)
+                            .selectAll("td")
+                            .data(data)
+                            .enter()
+                            .append("td")
+                            .html(d => d);
+
                         mb.select(this)
                             .select("td")
                             .style("transform", `translate(${translateLeft}px, 0)`);
@@ -155,6 +164,18 @@ function initGrid() {
                         mb.select(this)
                             .remove("*");
                     }
+                })
+                .watch(function(d) {
+                    const data = [];
+                    for (let i in config) {
+                        data.push(d[config[i].binding]);
+                    }
+
+                    mb.select(this)
+                        .selectAll("td")
+                        .data(data)
+                        .enter()
+                        .html(d => d);
                 });
         });
 

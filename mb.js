@@ -43,7 +43,8 @@
         insertAfter: select_insertAfter,
         child: select_child,
         next: select_next,
-        watch: select_watch
+        watch: select_watch,
+        enter: select_enter
     }
     function attrConstant(name, value) {
         return function () {
@@ -67,7 +68,18 @@
         for (let i = 0, n = this.group.length; i < n; i++) {
             const elm = callbacks.call(this.group[i], this.group[i]._data, i, this.group);
             if (elm) {
-                group.push(elm);
+                if (elm instanceof NodeList) {
+                    if (elm.length === 0) {
+                        group.push({
+                            appendChild: node => this.group[i].appendChild(node),
+                            parentNode: this.group[i]
+                        });
+                    } else {
+                        group.push(...elm);
+                    }
+                } else {
+                    group.push(elm);
+                }
             }
         }
 
@@ -202,6 +214,22 @@
             return this.parentNode;
         });
     }
+    function selectAllFunction(value) {
+        return function () {
+            const v = value.apply(this, arguments);
+            return this.querySelectorAll(v);
+        }
+    }
+    function selectAllConstant(value) {
+        return function () {
+            return this.querySelectorAll(value);
+        }
+    }
+    function select_selectAll(selector) {
+        return this.each((typeof selector == "function"
+            ? selectAllFunction
+            : selectAllConstant)(selector));
+    }
 
 
     function select_watch(callbacks) {
@@ -209,47 +237,55 @@
             callbacks.call(this, d, i, false);
 
             watch(this.parentNode._data, i, (n) => {
+                this._data = n;
                 callbacks.call(this, n, i, true);
             });
         });
     }
 
     function select_append(name) {
+        return this.each(function (data, i, group) {
+            if (this._update) {
+                this._update = null;
+                this._data = data;
+                return this;
+            } else {
+                const elm = document.createElement(name);
+                elm._data = data;
+                group[i].appendChild(elm);
+                elm._parent = elm.parentNode;
 
-        const enter = [];
-        forEach.call(this, function (node, val, data, i, group) {
-            const elm = document.createElement(val);
-            elm._data = data;
-            group[i].appendChild(elm);
-            enter[i] = elm;
-        }, name);
-
-        return new Select(enter);
+                return elm;
+            }
+        });
     }
+
     function select_data(value) {
         if (value) {
-            this.group[0]._data = value;
-
-            this.enter = select_enter;
+            let parent;
+            for (let i = 0, n = value.length; i < n; i++) {
+                if (this.group[i]) {
+                    parent = this.group[i].parentNode;
+                    this.group[i]._data = value[i];
+                } else {
+                    this.group.push({
+                        appendChild: node => parent.appendChild(node),
+                        parentNode: parent,
+                        _data: value[i]
+                    });
+                }
+            }
             return this;
         } else {
             return this.group[0]._data;
         }
     }
     function select_enter() {
-        const
-            data = this.group[0]._data,
-            enter = new Array(data.length);
-
-        for (let j in data) {
-            const element = {
-                appendChild: node => this.group[0].appendChild(node),
-                _data: data[j]
+        return this.each(function() {
+            if (this instanceof HTMLElement) {
+                this._update = true;
             }
-            enter[j] = element;
-        }
-
-        return new Select(enter);
+        });
     }
     function select_on(event, handler, capture) {
         return this.each(function(d) {
@@ -281,11 +317,6 @@
     function select_select(selector) {
         return forEach.call(this, function (node, val) {
             return [node.querySelector(val)];
-        }, selector);
-    }
-    function select_selectAll(selector) {
-        return forEach.call(this, function (node, val) {
-            return node.querySelectorAll(val);
         }, selector);
     }
     function forEach(selector, value) {
