@@ -32,22 +32,31 @@ for(let i = 0; i < 100; i++){
 
 
 const isFireFox = navigator.userAgent.toLowerCase().indexOf('firefox') > 1;
+
+
+let tbody;
+let order = {
+    by: "hight",
+    key: true
+}
 initGrid();
-
-
 function initGrid() {
     const body = mb.select(".body");
+
     body.remove("*");
+
     const table = body.append("table")
         .attr("border", 0)
         .attr("cellpadding", 0)
         .attr("cellspacing", 0);
+
     const thead = table.append("thead")
         .selectAll("tr")
         .data([config])
         .enter()
         .append("tr");
-    table
+
+    tbody = table
         .selectAll("tbody")
         .data([data])
         .enter()
@@ -60,55 +69,42 @@ function initGrid() {
         .append("td")
         .style("min-width", d => d.width + "px")
         .html(d => d.binding)
-        .call(mb.drag()
-            .on("end",function(d, i) {
-                const
-                    headerData = mb.select(this).parent().data(),
-                    hoveredData = mb.select(mb.event.target).data(),
-                    hoveredIndex = headerData.indexOf(hoveredData);
-
-                headerData.splice(i, 1);
-                headerData.splice(hoveredIndex, 0, d);
-
-                mb.select(this)
-                    .parent()
-                    .insertAfter(this, hoveredIndex);
-
-
-                table.select("tbody")
-                    .selectAll("tr")
-                    .child(i)
-                    .each(function() {
-                        mb.select(this)
-                            .parent()
-                            .insertAfter(this, hoveredIndex);
-                    });
-            })
-        )
-        .on("click", function() {
-            console.log("click");
+        .call(movementColumn())
+        .on("click", function (d) {
+            if (order.by === d.binding) {
+                order.key = !order.key;
+            } else {
+                order.key = true;
+            }
+            order.by = d.binding;
+            tbody.data().sort(function(a, b) {
+                return order.key
+                    ? a[d.binding] > b[d.binding]
+                        ? 1
+                        : b[d.binding] > a[d.binding]
+                            ? -1
+                            : 0
+                    : a[d.binding] < b[d.binding]
+                        ? 1
+                        : b[d.binding] < a[d.binding]
+                            ? -1
+                            : 0;
+            });
         })
         .append("div")
         .attr("class", "resize-column")
-        .call(mb.drag()
-            .on("start", function (d) {
-                mb.event.stopPropagation();
-                this.x = mb.event.clientX;
-                this.w = d.width;
-            })
-            .on("drag", function() {
-                mb.select(this)
-                    .parent()
-                    .style("min-width", d => {
-                        d.width = this.w + this.x - mb.event.clientX;
-                        return d.width + "px";
-                    });
-            })
-            .on("end", function() {
-                this.x = null;
-                this.w = null;
-            })
-        );
+        .call(resizeColumn());
+
+    mb.watch(order, "by", () => {
+        thead
+            .selectAll("td")
+            .classed("order", d => d.binding === order.by);
+    });
+    mb.watch(order, "key", (n) => {
+        thead
+            .select(".order")
+            .classed("desc", !n);
+    });
 
     mb.select(".body tbody")
         .selectAll("tr")
@@ -144,15 +140,7 @@ function initGrid() {
                     if (body.top < row.bottom &&
                         body.bottom > row.top) {
 
-                        const data = [];
-                        for (let i in config) {
-                            data.push(d[config[i].binding]);
-                        }
-
-                        mb.select(this)
-                            .selectAll("td")
-                            .data(data)
-                            .enter()
+                        enterCell.call(this, d)
                             .append("td")
                             .html(d => d);
 
@@ -166,19 +154,70 @@ function initGrid() {
                     }
                 })
                 .watch(function(d) {
-                    const data = [];
-                    for (let i in config) {
-                        data.push(d[config[i].binding]);
-                    }
-
-                    mb.select(this)
-                        .selectAll("td")
-                        .data(data)
-                        .enter()
+                    enterCell.call(this, d)
                         .html(d => d);
                 });
+
         });
 
     mb.select(".body").node().scrollTop = 1;
     mb.select(".body").node().scrollTop = 0;
+}
+
+function enterCell(d) {
+    const data = [];
+    for (let i in config) {
+        data.push(d[config[i].binding]);
+    }
+
+    return mb.select(this)
+        .selectAll("td")
+        .data(data)
+        .enter();
+}
+function movementColumn() {
+    return mb.drag()
+        .on("end", function (d, i) {
+            const
+                headerData = mb.select(this).parent().data(),
+                hoveredData = mb.select(mb.event.target).data(),
+                hoveredIndex = headerData.indexOf(hoveredData);
+
+            headerData.splice(i, 1);
+            headerData.splice(hoveredIndex, 0, d);
+
+            mb.select(this)
+                .parent()
+                .insertAfter(this, hoveredIndex);
+
+
+            tbody
+                .selectAll("tr")
+                .child(i)
+                .each(function () {
+                    mb.select(this)
+                        .parent()
+                        .insertAfter(this, hoveredIndex);
+                });
+        });
+}
+function resizeColumn() {
+    return mb.drag()
+        .on("start", function (d) {
+            mb.event.stopPropagation();
+            this.x = mb.event.clientX;
+            this.w = d.width;
+        })
+        .on("drag", function () {
+            mb.select(this)
+                .parent()
+                .style("min-width", d => {
+                    d.width = this.w + this.x - mb.event.clientX;
+                    return d.width + "px";
+                });
+        })
+        .on("end", function () {
+            this.x = null;
+            this.w = null;
+        })
 }

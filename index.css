@@ -90,6 +90,19 @@ tr > td:first-child {
 thead > tr > td {
     z-index: -2;
 }
+thead > tr > td.order::after {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-width: 0 1px 1px 0;
+    border-color: #000;
+    border-style: solid;
+    position: absolute;
+    transform: rotate(45deg);
+}
+thead > tr > td.order.desc::after {
+    transform: rotate(-135deg);
+}
 tbody > tr > td {
     z-index: -3;
 }

@@ -1,6 +1,6 @@
 (function (global, factory) {
-    factory(global.mb = {});
-}(window, function (exports) {
+    factory(global.mb = global.mb || {});
+}(this, (function (exports) {
     "use strict";
 
     function select(selector) {
@@ -44,7 +44,8 @@
         child: select_child,
         next: select_next,
         watch: select_watch,
-        enter: select_enter
+        enter: select_enter,
+        classed: select_classed
     }
     function attrConstant(name, value) {
         return function () {
@@ -104,6 +105,30 @@
         return this.each((typeof value == "function"
             ? styleFunction
             : styleConstant)(name, value, priority));
+    }
+    function classedConstant(name, value) {
+        return function () {
+            if (value) {
+                this.classList.add(name);
+            } else {
+                this.classList.remove(name);
+            }
+        };
+    }
+    function classedFunction(name, value) {
+        return function () {
+            const v = value.apply(this, arguments);
+            if (v) {
+                this.classList.add(name);
+            } else {
+                this.classList.remove(name);
+            }
+        };
+    }
+    function select_classed(name, value) {
+        return this.each((typeof value == "function"
+            ? classedFunction
+            : classedConstant)(name, value));
     }
     function textConstant(value) {
         return function () {
@@ -232,6 +257,7 @@
     }
 
 
+
     function select_watch(callbacks) {
         return this.each(function(d, i) {
             callbacks.call(this, d, i, false);
@@ -356,9 +382,9 @@
                     move = 0;
                     self = this;
                     args = arguments;
-                    document.addEventListener("mousemove", mousemove);
-                    document.addEventListener("mouseup", mouseup);
-                });
+                    document.addEventListener("mousemove", mousemove, true);
+                    document.addEventListener("mouseup", mouseup, true);
+                }, true);
             function mousemove(event) {
                 move ++;
                 if (listeners.drag) {
@@ -367,10 +393,11 @@
                 }
             }
             function mouseup(event) {
-                document.removeEventListener("mousemove", mousemove);
-                document.removeEventListener("mouseup", mouseup);
+                event.stopPropagation();
+                document.removeEventListener("mousemove", mousemove, true);
+                document.removeEventListener("mouseup", mouseup, true);
 
-                if (move > 0 && listeners.end) {
+                if (move > 1 && listeners.end) {
                     exports.event = event;
                     listeners.end.apply(self, args);
                 }
@@ -390,6 +417,7 @@
     exports.select = select;
     exports.selectAll = selectAll;
     exports.drag = drag;
+    exports.watch = watch;
     Object.defineProperty(exports, '__esModule', { value: true });
 
 
@@ -441,4 +469,4 @@
             }
         }
     }
-}));
+})));
