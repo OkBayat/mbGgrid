@@ -63,7 +63,11 @@ function initGrid() {
         .append("tbody");
 
     thead
-        .selectAll("td")
+        .append("td")
+        .attr("class", "side");
+
+    thead
+        .selectAll("td:not(.side)")
         .data(config)
         .enter()
         .append("td")
@@ -133,30 +137,51 @@ function initGrid() {
             mb.select(this)
                 .select("tbody")
                 .selectAll("tr")
-                .each(function(d) {
+                .watch(function(d, i) {
                     const body = mb.select(".body").node().getBoundingClientRect();
                     const row = this.getBoundingClientRect();
 
                     if (body.top < row.bottom &&
                         body.bottom > row.top) {
 
-                        enterCell.call(this, d)
-                            .append("td")
-                            .html(d => d);
-
                         mb.select(this)
-                            .select("td")
-                            .style("transform", `translate(${translateLeft}px, 0)`);
+                            .selectAll(".side")
+                            .data([1])
+                            .enter()
+                            .append("td")
+                            .on("click", function() {
+                                const selfRow = mb.select(this)
+                                    .parent()
+                                    .node();
+
+                                mb.select(this)
+                                    .parent()
+                                    .parent()
+                                    .insertAfter("tr", selfRow)
+                                    .attr("class", "cardx")
+                                    .append("tr");
+                            })
+                            .attr("class", "side");
+
+                        if (this.className !== "cardx") {
+                            enterCell.call(this, d)
+                                .append("td")
+                                .html(d => d);
+
+                            mb.select(this)
+                                .select("td")
+                                .style("transform", `translate(${translateLeft}px, 0)`);
+                        }
 
                     } else {
                         mb.select(this)
                             .remove("*");
                     }
                 })
-                .watch(function(d) {
-                    enterCell.call(this, d)
-                        .html(d => d);
-                });
+                //.watch(function(d) {
+                //    enterCell.call(this, d)
+                //        .html(d => d);
+                //});
 
         });
 
@@ -169,9 +194,9 @@ function enterCell(d) {
     for (let i in config) {
         data.push(d[config[i].binding]);
     }
-
+    
     return mb.select(this)
-        .selectAll("td")
+        .selectAll("td:not(.side)")
         .data(data)
         .enter();
 }

@@ -183,14 +183,15 @@
         return this;
     }
     function insertAfterConstant(elm, refrence) {
-        return function() {
+        return function () {
+            if (!(elm instanceof Node)) elm = document.createElement(elm);
             if (refrence instanceof HTMLElement) {
-                this.insertBefore(elm, r.nextSibling);
+                return this.insertBefore(elm, refrence.nextSibling);
             } else if (refrence > -1) {
                 if (elm === this.childNodes[refrence + 1]) {
-                    this.insertBefore(elm, this.childNodes[refrence]);
+                    return this.insertBefore(elm, this.childNodes[refrence]);
                 } else {
-                    this.insertBefore(elm, this.childNodes[refrence + 1]);
+                    return this.insertBefore(elm, this.childNodes[refrence + 1]);
                 }
             }
         }
