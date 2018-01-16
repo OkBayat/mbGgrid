@@ -42,21 +42,22 @@ let order = {
     by: "hight",
     key: true
 }
+let masterDetail = true;
+let masterDetailWidth = 50;
 initGrid();
-function initGrid() {
-    body = mb.select(".body");
 
+
+function initGrid() {
+    const openedDetailList = [];
+
+    body = mb.select(".body");
     body.remove("*");
 
     table = body.append("div")
-        .attr("class", "table")
-        .style("grid-template-columns", function () {
-            const columns = [];
-            for (let i = 0, n = config.length; i < n; i++) {
-                columns.push(config[i].width + "px");
-            }
-            return columns.join(" ");
-        });
+        .attr("class", "table");
+        
+    setGridTemplateColumns();
+    
 
     thead = table
         .selectAll("div")
@@ -65,48 +66,26 @@ function initGrid() {
         .append("div")
         .attr("class", "thead");
 
-
-    //thead
-    //    .append("div")
-    //    .attr("class", "side");
+    if (masterDetail) {
+        thead
+            .append("div")
+            .attr("class", "master-detail");
+    }
 
     thead
-        .selectAll("div:not(.side)")
+        .selectAll("div:not(.master-detail)")
         .data(config)
         .enter()
         .append("div")
         .html(d => d.binding)
         .call(movementColumn())
-        .each(function(d) {
-            mb.watch(d, "width", (n) => {
-                const index = config.indexOf(mb.select(this).data());
-                gridTemplateColumnsUpdate(n, index);
-            });
+        .each(function (d) {
+            mb.watch(d, "width", (n) => gridTemplateColumnsUpdate(n, mb.select(this).parent().indexOf(this)));
         })
-        .on("click", function (d) {
-            if (order.by === d.binding) {
-                order.key = !order.key;
-            } else {
-                order.key = true;
-            }
-            order.by = d.binding;
-            tbody.data().sort(function(a, b) {
-                return order.key
-                    ? a[d.binding] > b[d.binding]
-                        ? 1
-                        : b[d.binding] > a[d.binding]
-                            ? -1
-                            : 0
-                    : a[d.binding] < b[d.binding]
-                        ? 1
-                        : b[d.binding] < a[d.binding]
-                            ? -1
-                            : 0;
-            });
-        })
-        .append("div")
-        .attr("class", "resize-column")
-        .call(resizeColumn());
+        .on("click", sortColumns)
+            .append("div")
+            .attr("class", "resize-column")
+            .call(resizeColumn());
 
     //mb.watch(order, "by", () => {
     //    thead
@@ -138,11 +117,28 @@ function initGrid() {
         thead.select("div")
             .style("transform", `translate(${translateLeft}px, 0)`);
 
-        tbody.each(function(d) {
+        tbody.watch(function(d) {
                 const row = this.getBoundingClientRect();
 
                 if (bodyOffset.top < row.bottom &&
                     bodyOffset.bottom > row.top) {
+                    mb.select(this)
+                        .attr("data-detail", () => openedDetailList.indexOf(d) > -1)
+                        .selectAll(".master-detail")
+                        .enter()
+                        .append("div")
+                        .attr("class", "master-detail")
+                        .on("click", () => {
+                            openedDetailList.push(d);
+                            mb.select(this)
+                                .selectAll(".detail")
+                                .enter()
+                                .append("div")
+                                .attr("class", "detail")
+                                .style("grid-column-start", 2)
+                                .style("grid-column-end", 8)
+                                .html("aaaa");
+                        });
 
                     //mb.select(this)
                     //    .selectAll(".side")
@@ -172,12 +168,27 @@ function initGrid() {
                         mb.select(this)
                             .select("div")
                             .style("transform", `translate(${translateLeft}px, 0)`);
+
+                        if (this.dataset.detail === "true") {
+                            mb.select(this)
+                                .selectAll(".detail")
+                                .enter()
+                                .append("div")
+                                .attr("class", "detail")
+                                .style("grid-column-start", 2)
+                                .style("grid-column-end", 8)
+                                .html("aaaa");
+                        } else {
+                            mb.select(this)
+                                .remove(".detail");
+                        }
+
                     //}
                 } else {
                     mb.select(this)
                         .remove("*");
                 }
-            });
+            }, data);
     });
 
     mb.select(".body").node().scrollTop = 1;
@@ -191,7 +202,7 @@ function enterCell(d) {
     }
     
     return mb.select(this)
-        .selectAll("div:not(.side)")
+        .selectAll("div:not(.master-detail):not(.detail)")
         .data(data)
         .enter();
 }
@@ -204,29 +215,18 @@ function gridTemplateColumnsUpdate(d, i) {
 function movementColumn() {
     return mb.drag()
         .on("end", function (d, i) {
-            const hoveredData = mb.select(mb.event.target).data();
-            const elm = d;
-            let fromIndex = config.indexOf(d);
-            let toIndex = config.indexOf(hoveredData);
-            config.splice(fromIndex, 1);
+            const
+                hoveredData = mb.select(mb.event.target).data(),
+                toIndex = config.indexOf(hoveredData) + 1;
 
-            if (fromIndex > toIndex + 1) {
-                config.splice(toIndex + 1, 0, elm);
-            } else {
-                config.splice(toIndex, 0, elm);
-            }
             mb.select(this)
                 .parent()
                 .insertAfter(this, toIndex);
 
+            
             ////-----------
-            const columns = [];
-            for (let j = 0, n = config.length; j < n; j++) {
-                columns.push(config[j].width + "px");
-            }
-            table.style("grid-template-columns", columns.join(" "));
+            setGridTemplateColumns();
             //-----------
-
 
             tbody.child(i)
                 .each(function () {
@@ -238,16 +238,46 @@ function movementColumn() {
 }
 function resizeColumn() {
     return mb.drag()
-        .on("start", function (d) {
+        .on("start", function () {
             mb.event.stopPropagation();
             this.x = mb.event.clientX;
-            this.w = d.width;
+            this.w = mb.select(this).parent().data().width;
         })
-        .on("drag", function (d) {
-            d.width = this.w + this.x - mb.event.clientX;
+        .on("drag", function () {
+            mb.select(this).parent().data().width = this.w + this.x - mb.event.clientX;
         })
         .on("end", function () {
             this.x = null;
             this.w = null;
         });
+}
+function sortColumns(d) {
+    if (order.by === d.binding) {
+        order.key = !order.key;
+    } else {
+        order.key = true;
+    }
+    order.by = d.binding;
+    data.sort(function (a, b) {
+        return order.key
+            ? a[d.binding] > b[d.binding]
+            ? 1
+            : b[d.binding] > a[d.binding]
+            ? -1
+            : 0
+            : a[d.binding] < b[d.binding]
+            ? 1
+            : b[d.binding] < a[d.binding]
+            ? -1
+            : 0;
+    });
+}
+function setGridTemplateColumns() {
+    table.style("grid-template-columns", function () {
+        const columns = masterDetail ? [masterDetailWidth + "px"] : [];
+        for (let i = 0, n = config.length; i < n; i++) {
+            columns.push(config[i].width + "px");
+        }
+        return columns.join(" ");
+    });
 }

@@ -45,7 +45,8 @@
         next: select_next,
         watch: select_watch,
         enter: select_enter,
-        classed: select_classed
+        classed: select_classed,
+        indexOf: select_indexOf
     }
     function attrConstant(name, value) {
         return function () {
@@ -184,16 +185,30 @@
     }
     function insertAfterConstant(elm, refrence) {
         return function () {
+            let newElm;
+
             if (!(elm instanceof Node)) elm = document.createElement(elm);
             if (refrence instanceof HTMLElement) {
-                return this.insertBefore(elm, refrence.nextSibling);
+                newElm = this.insertBefore(elm, refrence.nextSibling);
             } else if (refrence > -1) {
                 if (elm === this.childNodes[refrence + 1]) {
-                    return this.insertBefore(elm, this.childNodes[refrence]);
+                    newElm = this.insertBefore(elm, this.childNodes[refrence]);
                 } else {
-                    return this.insertBefore(elm, this.childNodes[refrence + 1]);
+                    newElm = this.insertBefore(elm, this.childNodes[refrence + 1]);
                 }
             }
+
+            if (newElm._data) {
+                let j = 0;
+                for (let i = 0, n = this.childNodes.length; i < n; i++) {
+                    if (this._data && this.childNodes[i]._data) {
+                        this._data[j] = this.childNodes[i]._data;
+                        j++;
+                    }
+                }
+            }
+
+            return newElm;
         }
     }
     function insertAfterFunction(elm, refrence) {
@@ -256,14 +271,32 @@
             ? selectAllFunction
             : selectAllConstant)(selector));
     }
+    function select_indexOf(selector) {
+        for (let i = 0, n = this.group.length; i < n; i++) {
+            const index = Array.prototype.slice.call(this.node().children).indexOf(selector);
+            if (index > -1) {
+                return index;
+            }
+        }
+        return -1;
+    }
 
 
 
-    function select_watch(callbacks) {
+    function select_watch(callbacks, data) {
         return this.each(function(d, i) {
             callbacks.call(this, d, i, false);
 
-            watch(this.parentNode._data, i, (n) => {
+            //let data = [];
+            //if (this.parentNode._data) {
+            //    data = this.parentNode._data;
+            //} else {
+            //    for (let j = 0, nodes = this.parentNode.childNodes, n = nodes.length; j < n; j++) {
+            //        data.push(nodes[j]._data);
+            //    }
+            //}
+
+            watch(data || this.parentNode._data, i, (n) => {
                 this._data = n;
                 callbacks.call(this, n, i, true);
             });
@@ -278,9 +311,12 @@
                 return this;
             } else {
                 const elm = document.createElement(name);
-                elm._data = data;
                 group[i].appendChild(elm);
                 elm._parent = elm.parentNode;
+
+                if (!(this instanceof HTMLElement)) {
+                    elm._data = data;
+                }
 
                 return elm;
             }
@@ -383,8 +419,11 @@
                     move = 0;
                     self = this;
                     args = arguments;
-                    document.addEventListener("mousemove", mousemove, true);
-                    document.addEventListener("mouseup", mouseup, true);
+                    document.addEventListener("mousemove", mousemove);
+                    document.addEventListener("mouseup", mouseup);
+                })
+                .on("click", function() {
+                    exports.event.stopPropagation();
                 }, true);
             function mousemove(event) {
                 move ++;
@@ -394,9 +433,8 @@
                 }
             }
             function mouseup(event) {
-                event.stopPropagation();
-                document.removeEventListener("mousemove", mousemove, true);
-                document.removeEventListener("mouseup", mouseup, true);
+                document.removeEventListener("mousemove", mousemove);
+                document.removeEventListener("mouseup", mouseup);
 
                 if (move > 1 && listeners.end) {
                     exports.event = event;
@@ -463,9 +501,7 @@
         if (deep) {
             if (typeof object[prop] == "object") {
                 for (let i in object[prop]) {
-                    if (!(prop === 'OHLC' || i === 'data')) {
-                        watch(object[prop], i, handler, deep);
-                    }
+                    watch(object[prop], i, handler, deep);
                 }
             }
         }
