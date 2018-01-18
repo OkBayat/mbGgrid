@@ -117,62 +117,68 @@ function initGrid() {
         thead.select("div")
             .style("transform", `translate(${translateLeft}px, 0)`);
 
-        tbody.watch(function(d) {
+        tbody
+            .each(function(d) {
                 const row = this.getBoundingClientRect();
 
                 if (bodyOffset.top < row.bottom &&
                     bodyOffset.bottom > row.top) {
+                    if (this.hasChildNodes()) {
+                        return;
+                    }
+                    let isOpenDetail = openedDetailList.indexOf(d) > -1;
+
                     mb.select(this)
-                        .attr("data-detail", () => openedDetailList.indexOf(d) > -1)
-                        .selectAll(".master-detail")
-                        .enter()
                         .append("div")
                         .attr("class", "master-detail")
-                        .on("click", () => {
-                            openedDetailList.push(d);
+                        .classed("open", isOpenDetail)
+                        .on("click", function () {
+                            if (isOpenDetail) {
+                                const index = openedDetailList.indexOf(d);
+                                openedDetailList.splice(index, 1);
+
+                                mb.select(this)
+                                    .parent()
+                                    .remove(".detail");
+
+                                mb.select(".body").node().scrollTop++;
+                                mb.select(".body").node().scrollTop--;
+                            } else {
+                                openedDetailList.push(d);
+
+                                mb.select(this)
+                                    .parent()
+                                    .selectAll(".detail")
+                                    .enter()
+                                    .append("div")
+                                    .attr("class", "detail")
+                                    .style("grid-column-start", 2)
+                                    .style("grid-column-end", 8)
+                                    .html("aaaa");
+                            }
+                            isOpenDetail = !isOpenDetail;
                             mb.select(this)
-                                .selectAll(".detail")
-                                .enter()
-                                .append("div")
-                                .attr("class", "detail")
-                                .style("grid-column-start", 2)
-                                .style("grid-column-end", 8)
-                                .html("aaaa");
+                                .classed("open", isOpenDetail);
+                            
+
                         });
 
-                    //mb.select(this)
-                    //    .selectAll(".side")
-                    //    .data([1])
-                    //    .enter()
-                    //    .append("div")
-                    //    .on("click",
-                    //        function() {
-                    //            const selfRow = mb.select(this)
-                    //                .parent()
-                    //                .node();
-
-                    //            mb.select(this)
-                    //                .parent()
-                    //                .parent()
-                    //                .insertAfter("tr", selfRow)
-                    //                .attr("class", "cardx")
-                    //                .append("tr");
-                    //        })
-                    //    .attr("class", "side");
-
-                    //if (this.className !== "cardx") {
-                        enterCell.call(this, d)
-                            .append("div")
-                            .html(d => d);
+                    enterCell.call(this, d)
+                        .append("div")
+                        .html(d => d.value)
+                        .watch(function (n, o, i, update) {
+                            if (update)
+                                mb.select(this)
+                                    .html(n)
+                                    .classed(n > o ? "green" : "red", 500);
+                        }, null, d => d.binding);
 
                         mb.select(this)
                             .select("div")
                             .style("transform", `translate(${translateLeft}px, 0)`);
 
-                        if (this.dataset.detail === "true") {
+                        if (isOpenDetail) {
                             mb.select(this)
-                                .selectAll(".detail")
-                                .enter()
                                 .append("div")
                                 .attr("class", "detail")
                                 .style("grid-column-start", 2)
@@ -198,7 +204,7 @@ function initGrid() {
 function enterCell(d) {
     const data = [];
     for (let i in config) {
-        data.push(d[config[i].binding]);
+        data.push({ value: d[config[i].binding], binding: config[i].binding });
     }
     
     return mb.select(this)
@@ -215,6 +221,9 @@ function gridTemplateColumnsUpdate(d, i) {
 function movementColumn() {
     return mb.drag()
         .on("end", function (d, i) {
+            if (mb.event.target.classList.contains("master-detail")) {
+                return;
+            }
             const
                 hoveredData = mb.select(mb.event.target).data(),
                 toIndex = config.indexOf(hoveredData) + 1;

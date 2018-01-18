@@ -137,7 +137,7 @@ tbody > tr:hover > td {
     z-index: 2;
 }
 .table > div > div {
-    border-left: 1px solid #e3ebef;
+    .border-left: 1px solid #e3ebef;
     border-bottom: 1px solid #e3ebef;
     box-sizing: border-box;
     padding: 0 5px;
@@ -160,4 +160,32 @@ tbody > tr:hover > td {
 }
 .table > div:not(.thead):nth-child(odd) > div {
     background-color: #fff;
+}
+.table > div > div.green {
+    background-color: green!important;
+}
+.table > div > div.red {
+    background-color: red!important;
+}
+.master-detail {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+.master-detail::after {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-width: 0 0 1px 1px;
+    border-style: solid;
+    border-color: #757575;
+    transform: rotate(45deg);
+    display: block;
+}
+.master-detail.open::after {
+    transform: rotate(-45deg);
+}
+.thead > .master-detail::after {
+    display: none;
 }

@@ -109,7 +109,10 @@
     }
     function classedConstant(name, value) {
         return function () {
-            if (value) {
+            if (typeof value == "number") {
+                this.classList.add(name);
+                setTimeout(() => this.classList.remove(name), value)
+            } else if (value) {
                 this.classList.add(name);
             } else {
                 this.classList.remove(name);
@@ -119,11 +122,7 @@
     function classedFunction(name, value) {
         return function () {
             const v = value.apply(this, arguments);
-            if (v) {
-                this.classList.add(name);
-            } else {
-                this.classList.remove(name);
-            }
+            classedConstant(name, v).call(this);
         };
     }
     function select_classed(name, value) {
@@ -283,22 +282,14 @@
 
 
 
-    function select_watch(callbacks, data) {
+    function select_watch(callbacks, data, prop) {
         return this.each(function(d, i) {
-            callbacks.call(this, d, i, false);
+            callbacks.call(this, d, null, i, false);
 
-            //let data = [];
-            //if (this.parentNode._data) {
-            //    data = this.parentNode._data;
-            //} else {
-            //    for (let j = 0, nodes = this.parentNode.childNodes, n = nodes.length; j < n; j++) {
-            //        data.push(nodes[j]._data);
-            //    }
-            //}
-
-            watch(data || this.parentNode._data, i, (n) => {
+            const p = (prop && typeof prop == "function") ? prop(d) : prop;
+            watch(data || this.parentNode._data, p || i, (n, o) => {
                 this._data = n;
-                callbacks.call(this, n, i, true);
+                callbacks.call(this, n, o, p || i, true);
             });
         });
     }
@@ -366,16 +357,17 @@
                 }, capture);
         });
     }
+    
     function select_remove(selector) {
-        return forEach.call(this, function (node, val) {
-            if (val) {
-                while (node.querySelector(val)) {
-                    node.removeChild(node.querySelector(val));
+        return this.each(function () {
+            if (selector) {
+                while (this.querySelector(selector)) {
+                    this.removeChild(this.querySelector(selector));
                 }
             } else {
-                node.parentElement.removeChild(node);
+                this.parentElement.removeChild(this);
             }
-        }, selector);
+        });
     }
     function select_select(selector) {
         return forEach.call(this, function (node, val) {
