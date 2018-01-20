@@ -25,7 +25,7 @@ const config = [
         width: 100
     }
 ];
-const data = [];
+let data = [];
 for(let i = 0; i < 100; i++){
     data.push({name: 'Mohammad' + i, lname: 'Bayat' + i, age: 0 + i, hight: 100 + i, phone: 09196797500 + i, id: 4270331200 + i})
 }
@@ -66,6 +66,7 @@ function initGrid() {
         .append("div")
         .attr("class", "thead");
 
+
     if (masterDetail) {
         thead
             .append("div")
@@ -87,6 +88,24 @@ function initGrid() {
             .attr("class", "resize-column")
             .call(resizeColumn());
 
+    if (masterDetail) {
+        thead
+            .append("div")
+            .attr("class", "master-detail");
+    }
+        
+    thead
+        .selectAll("div.detail")
+        .data(config)
+        .enter()
+        .append("div")
+        .attr("class", "detail")
+        .append("input")
+        .on("keyup", function(d, i) {
+            if (mb.event.target.value.toString().length > 2) {
+                data = data.filter( item => eval("'" + item[this.parentElement._data.binding] + "'" + mb.event.target.value));
+            }
+        });
     //mb.watch(order, "by", () => {
     //    thead
     //        .selectAll("td")
